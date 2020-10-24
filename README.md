@@ -1,2 +1,1 @@
-# -100daysofcode
-The rules:
+
