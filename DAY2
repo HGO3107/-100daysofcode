@@ -1,0 +1,204 @@
+/*
+ * File:   digital_solat_time_chart.c
+ * Author: HGO
+ *
+ * Created on October 19, 2020, 9:46 PM
+ * Descriotion: this program enable the operation of 4 digit seven segment dsiplay
+ *              through the 4 push buttons, the prev_dig
+ */
+
+#include <xc.h>
+#include "config_1.h" //connfiguration settings
+
+//  The buttons
+#define up_count PORTDbits.RD0 // to increase the display value by one
+#define down_count PORTDbits.RD1 // to decrease the display value by one
+#define next_digit PORTDbits.RD2 // to move the cursor to the next segment display
+#define prev_digit PORTDbits.RD3 // to move the cursor in a backward direction
+#define save_vals PORTDbits.RD4 // to save the displays last values to EEPROM, so that on POR the last values will automatically show on the display
+
+unsigned char seg_arr[] = {0x02, 0x9F, 0x24, 0x0C, 0x98, 0x48, 0x40, 0x0F, 0x00, 0x18}; \\ The display corresponding values in HEX from 0-9, 
+                                                                                        \\common anode including the colon dividing the 4 seven segment display
+
+
+
+void main(void) {
+    
+    int count = 0,
+            move = 0,
+            cnt_hr1 = 0,
+            cnt_hr2 = 0,
+            cnt_min1 = 0,
+            cnt_min2 = 0;
+    
+    //DIRECTION CONFIGURATION//
+    
+    TRISC = 0x00; // direction is set to OUTPUT
+    TRISB = 0x00; // direction is also set to OUTPUT
+    TRISD = 0x0F; // direction is set as INPUT
+    
+    //PORTs INIT//
+    PORTB = 0x00; // initialized port B to LOW
+    PORTC = 0x00;
+    
+    while(1)// forever loop
+    {
+        if(up_count == 1) // if pressed
+        {
+            __delay_ms(50); // debounce time
+            if(up_count == 1) // if still pressed
+            {
+                if(up_count == 0) // if then released
+                {
+                    count++; // increment count by one 
+                }
+            }
+                  
+        }
+        
+        if(down_count == 1) // if pressed
+        {
+            __delay_ms(50); // debounce time
+            if(down_count == 1) // if still pressed
+            {
+                if(down_count == 0) // if then released
+                {
+                    count--; // decrement by 1
+                }//endIf
+            } // endif
+                  
+        }// endif
+        
+        if(next_digit == 1) // if pressed
+        {
+            __delay_ms(50); // debounce time
+            if(next_digit == 1) // if still pressed
+            {
+                if(next_digit == 0) // if then released
+                {
+                    move++; //
+                }//endIf
+            } // endif
+                  
+        }// endif
+        
+        if(prev_digit == 1) // if pressed
+        {
+            __delay_ms(50); // debounce time
+            if(prev_digit == 1) // if still pressed
+            {
+                if(prev_digit == 0) // if then released
+                {
+                    move--; //
+                }//endIf
+            } // endif
+                  
+        }// endif
+        
+        if(move == 1)
+        {
+            cnt_hr1 =+ count;
+            count = 0;
+            if(cnt_hr1 > 1)
+                cnt_hr1 = 0;
+        }
+        
+        else if(move == 2)
+        {
+            cnt_hr2 += count;
+            count = 0;
+            // if the first hour digit is 1 the second hour digit must not exceed 2,
+            //and if the first hour digit is zero the second hour digit must not be greater than 9.
+            if((cnt_hr2 >9 && cnt_hr1>0 )|| (cnt_hr2>2 && cnt_hr1 >1) ) 
+                cnt_hr2 = 0;
+                
+        }
+        
+        else if(move == 3)
+        {
+            cnt_min1 + = count;
+            count = 0;
+            
+            if(cnt_min1 > 5)
+                cnt_min1 == 0;
+                      
+        }
+        
+        else if(move == 4)
+        {
+            cnt_min2 += count;
+            count = 0;
+            
+            if(cnt_min2 > 9)
+                cnt_min2 = 0;
+        }
+        
+        /*Display the values*/
+        //suggested this should start showing if enter is press
+        PORTB = seg_arr[cnt_hr1];
+        PORTC = 0x01;
+        __delay_ms(1000);
+        
+        PORTB = seg_arr[cnt_hr2];
+        PORTC = 0x02;
+        __delay_ms(1000);
+        
+        PORTB = seg_arr[cnt_min1];
+        PORTC = 0x04;
+        __delay_ms(1000);
+        
+        PORTB = seg_arr[cnt_min2];
+        PORTC = 0x08;
+        __delay_ms(200);
+             
+    }
+    
+    return;
+}
+
+/*
+ *  Function name: seg_selector
+ *  Return: none
+ *  parameter: unsigned char segment
+ *  Description:    the function select the seven segment display to operate, 
+ *                  by giving the correct de-multiplexer inputs value
+ */
+
+
+/*void seg_selector(unsigned char segment, unsigned char segment2)
+{
+    //PortX = segment
+    if(segment > 0x0F && segment =<0xFF)
+    {
+        LATB = segment<<4; // upper nibble
+        LATE = 0x00;
+    }    
+    else   
+    {
+        LATB = segment;  // lower nibble
+        LATE = 0x00;
+    }
+    
+    
+    
+   //100 delay_ms
+    __delay_ms(100);
+}*/
+
+/*
+ *  Function name: seg_val
+ *  Return: unsigned char seg_arr
+ *  parameter: int count.
+ *  Description: This function takes in the count and return the corresponding array value
+ */
+
+unsigned char seg_val(int count)
+{
+    unsigned char display;
+    if(count < 10)
+    {
+       display =  seg_arr[count];
+    }
+    
+    return display;
+}
